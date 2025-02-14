@@ -42,9 +42,13 @@ export const onRequest: PagesFunction<{
 }> = async function (context) {
   const env = context.env;
   const request: Request = context.request;
+  const url = new URL(request.url);
+  
   if (request.method === "OPTIONS") return handleRequestOptions();
 
+  const isWebDAV = url.pathname.startsWith("/webdav/");
   const skipAuth =
+    isWebDAV &&
     env.WEBDAV_PUBLIC_READ &&
     ["GET", "HEAD", "PROPFIND"].includes(request.method);
 
@@ -69,7 +73,7 @@ export const onRequest: PagesFunction<{
   const [bucket, path] = parseBucketPath(context);
   if (!bucket) return notFound();
 
-  const method: string = (context.request as Request).method;
+  const method: string = request.method;
   const handler = HANDLERS[method] ?? handleMethodNotAllowed;
-  return handler({ bucket, path, request: context.request });
+  return handler({ bucket, path, request });
 };
